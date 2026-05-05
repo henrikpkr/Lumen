@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumen Psychotherapy Recorder (Local Agent Prototype)</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 40px auto; 
+            padding: 20px; 
+            background-color: #f9fafb; 
+            color: #111827; 
+            line-height: 1.5;
+        }
+        .card { 
+            background: white; 
+            padding: 32px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); 
+            margin-bottom: 24px; 
+        }
+        h1 { margin-top: 0; color: #111827; }
+        .description { color: #4b5563; margin-bottom: 24px; font-size: 1.05rem; }
+        
+        .controls { 
+            display: flex; 
+            gap: 12px; 
+            margin-bottom: 24px; 
+            flex-wrap: wrap;
+        }
+        
+        button { 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            font-size: 1rem;
+            cursor: pointer; 
+            color: white; 
+            transition: opacity 0.2s, transform 0.1s; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        #startBtn { background-color: #ef4444; }
+        #pauseBtn { background-color: #f59e0b; }
+        #resumeBtn { background-color: #10b981; }
+        #stopBtn { background-color: #374151; }
+        #summarizeBtn { background-color: #2563eb; width: 100%; margin-top: 16px; justify-content: center; }
+        #uploadBtn { background-color: #7c3aed; }
+        
+        .status-container {
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background-color: #f3f4f6;
+            border-radius: 8px;
+        }
+        
+        .status-indicator { 
+            display: inline-block; 
+            width: 14px; 
+            height: 14px; 
+            border-radius: 50%; 
+            background-color: #d1d5db; 
+            margin-right: 12px; 
+            transition: background-color 0.3s;
+        }
+        
+        .status-recording { background-color: #ef4444; animation: pulse 1.5s infinite; }
+        .status-paused { background-color: #f59e0b; }
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 
+        }
+        
+        textarea { 
+            width: 100%; 
+            height: 180px; 
+            padding: 16px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 8px; 
+            margin-top: 8px; 
+            font-family: inherit; 
+            font-size: 1rem;
+            resize: vertical; 
+            box-sizing: border-box;
+            line-height: 1.5;
+        }
+        textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        .loader { 
+            display: none; 
+            margin-top: 16px; 
+            font-size: 15px; 
+            color: #4b5563; 
+            padding: 12px;
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+        
+        .progress-container {
+            display: none;
+            margin-top: 16px;
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 24px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .progress-text {
+            display: none;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #6b7280;
+            text-align: center;
+        }
+        
+        label { font-weight: 600; color: #374151; font-size: 1.1rem; }
+        
+        .upload-section {
+            margin-top: 32px;
+            padding: 24px;
+            background: #faf5ff;
+            border: 2px dashed #c4b5fd;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .upload-section h3 { margin-top: 0; color: #6d28d9; }
+        .upload-section input[type="file"] { margin: 12px 0; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Psychotherapy Session Prototype</h1>
+        <p class="description">
+            Record your session locally or upload an MP3 file. The audio will be transcribed securely on this device without leaving your computer, 
+            using the <strong>faster-whisper</strong> engine. Then, a team of local AI agents will structure it into a clinical note.
+        </p>
+        
+        <div class="status-container">
+            <span id="statusIndicator" class="status-indicator"></span>
+            <span id="statusText" style="font-weight: 600; color: #111827;">Ready to record</span>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">&#x23F9; Start Recording</button>
+            <button id="pauseBtn" disabled>&#x23F8; Pause</button>
+            <button id="resumeBtn" style="display: none;">&#x25B6;&#xFE0F; Resume</button>
+            <button id="stopBtn" disabled>&#x23F9; Stop & Transcribe</button>
+            <input type="file" id="fileInput" accept=".mp3,audio/mpeg,audio/mp3" style="display: none;">
+            <button id="uploadBtn">&#x1F4E4; Upload MP3</button>
+        </div>
+        
+        <div id="transcribeLoader" class="loader">
+            <strong>Transcribing audio...</strong><br>
+            The local whisper model is processing the audio. This may take a moment depending on the recording length.
+        </div>
+        
+        <div id="uploadLoader" class="loader">
+            <strong>Uploading and transcribing...</strong><br>
+            Uploading MP3 file and processing with local whisper model.
+        </div>
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+        <div class="progress-text" id="progressText">Processing...</div>
+        
+        <div style="margin-top: 32px;">
+            <label for="transcriptBox">Raw Transcript</label>
+            <textarea id="transcriptBox" placeholder="Local transcription will appear here..."></textarea>
+        </div>
+        
+        <button id="summarizeBtn" disabled>&#x1F916; Generate Agentic Clinical Note (SOAP)</button>
+        <div id="summarizeLoader" class="loader">
+            <strong>Agents are analyzing...</strong><br>
+            The Extractor agent is pulling facts, the Formatter is writing the SOAP note, and the Reviewer is checking for hallucinations.
+        </div>
+        
+        <div style="margin-top: 32px;">
+            <label for="noteBox">Final Clinical Note</label>
+            <textarea id="noteBox" style="height: 300px;" placeholder="AI-generated, agent-reviewed SOAP note will appear here..."></textarea>
+        </div>
+    </div>
+    
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const summarizeBtn = document.getElementById('summarizeBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('fileInput');
+        
+        const transcriptBox = document.getElementById('transcriptBox');
+        const noteBox = document.getElementById('noteBox');
+        
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const transcribeLoader = document.getElementById('transcribeLoader');
+        const summarizeLoader = document.getElementById('summarizeLoader');
+        const uploadLoader = document.getElementById('uploadLoader');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        // The local FastAPI endpoint
+        const API_BASE = 'http://127.0.0.1:8003';
+
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    // Create audio blob and send to backend
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioChunks = [];
+                    await uploadAndTranscribe(audioBlob);
+                };
+
+                mediaRecorder.onpause = () => {
+                    statusIndicator.className = 'status-indicator status-paused';
+                    statusText.textContent = 'Recording Paused';
+                };
+
+                mediaRecorder.onresume = () => {
+                    statusIndicator.className = 'status-indicator status-recording';
+                    statusText.textContent = 'Recording Session...';
+                };
+            } catch (err) {
+                alert('Microphone access denied or error occurred: ' + err.message);
+                throw err;
+            }
+        }
+
+        startBtn.onclick = async () => {
+            if (!mediaRecorder) await setupAudio();
+            audioChunks = []; // reset
+            mediaRecorder.start(1000); // chunk every 1s
+            
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            
+            statusIndicator.className = 'status-indicator status-recording';
+            statusText.textContent = 'Recording Session...';
+        };
+
+        pauseBtn.onclick = () => {
+            mediaRecorder.pause();
+            pauseBtn.style.display = 'none';
+            resumeBtn.style.display = 'inline-flex';
+        };
+
+        resumeBtn.onclick = () => {
+            mediaRecorder.resume();
+            resumeBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-flex';
+        };
+
+        stopBtn.onclick = () => {
+            mediaRecorder.stop();
+            
+            // Release the microphone
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            mediaRecorder = null; // force re-setup next time
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resumeBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-flex';
+            stopBtn.disabled = true;
+            
+            statusIndicator.className = 'status-indicator';
+            statusText.textContent = 'Processing Audio...';
+        };
+
+        async function uploadAndTranscribe(blob) {
+            transcribeLoader.style.display = 'block';
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '10%';
+            progressBar.textContent = '10%';
+            progressText.style.display = 'block';
+            transcriptBox.value = '';
+            
+            const formData = new FormData();
+            formData.append('audio', blob, 'session.webm');
+
+            try {
+                progressBar.style.width = '30%';
+                progressBar.textContent = '30%';
+                
+                const response = await fetch(`${API_BASE}/api/transcribe`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                progressBar.style.width = '70%';
+                progressBar.textContent = '70%';
+                
+                const data = await response.json();
+                
+                progressBar.style.width = '90%';
+                progressBar.textContent = '90%';
+                
+                if (data.error) {
+                    transcriptBox.value = 'Error: ' + data.error;
+                    progressText.textContent = 'Error during transcription';
+                } else {
+                    transcriptBox.value = data.transcript || '(Empty transcript)';
+                    summarizeBtn.disabled = false;
+                    progressText.textContent = 'Transcription complete!';
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                }
+                statusText.textContent = 'Transcription Complete';
+            } catch (error) {
+                transcriptBox.value = 'Failed to connect to local transcription server. Make sure transcribe_server.py is running on port 8003.';
+                statusText.textContent = 'Error';
+                progressText.textContent = 'Error: ' + error.message;
+            } finally {
+                transcribeLoader.style.display = 'none';
+                // Keep progress bar visible for a moment
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressText.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                }, 2000);
+            }
+        }
+
+        // Handle MP3 file upload
+        uploadBtn.onclick = () => {
+            fileInput.click(); // Trigger file selection dialog
+        };
+
+        fileInput.onchange = async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            uploadBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '10%';
+            progressBar.textContent = '10%';
+            progressText.style.display = 'block';
+            transcriptBox.value = 'Uploading and transcribing...';
+            
+            const formData = new FormData();
+            formData.append('audio', file, file.name);
+
+            try {
+                progressBar.style.width = '30%';
+                progressBar.textContent = '30%';
+                progressText.textContent = 'Uploading file...';
+                
+                const response = await fetch(`${API_BASE}/api/transcribe`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                progressBar.style.width = '70%';
+                progressBar.textContent = '70%';
+                progressText.textContent = 'Transcribing audio...';
+                
+                const data = await response.json();
+                
+                progressBar.style.width = '90%';
+                progressBar.textContent = '90%';
+                
+                if (data.error) {
+                    transcriptBox.value = 'Error: ' + data.error;
+                    progressText.textContent = 'Error during transcription';
+                } else {
+                    transcriptBox.value = data.transcript || '(Empty transcript)';
+                    summarizeBtn.disabled = false;
+                    progressText.textContent = 'Transcription complete!';
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                }
+                statusText.textContent = 'MP3 Transcription Complete';
+            } catch (error) {
+                transcriptBox.value = 'Failed to connect to local transcription server. Make sure transcribe_server.py is running on port 8003.';
+                statusText.textContent = 'Error';
+                progressText.textContent = 'Error: ' + error.message;
+            } finally {
+                uploadBtn.disabled = false;
+                fileInput.value = ''; // Reset file input
+                // Keep progress bar visible for a moment
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressText.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                }, 2000);
+            }
+        };
+
+        summarizeBtn.onclick = async () => {
+            const transcript = transcriptBox.value;
+            if (!transcript) return;
+            
+            summarizeBtn.disabled = true;
+            summarizeLoader.style.display = 'block';
+            noteBox.value = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/summarize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transcript })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    noteBox.value = 'Error: ' + data.error;
+                } else {
+                    noteBox.value = data.final_note || '(Empty note)';
+                }
+            } catch (error) {
+                noteBox.value = 'Failed to connect to local summarization server. Make sure transcribe_server.py is running and Ollama is available.';
+            } finally {
+                summarizeLoader.style.display = 'none';
+                summarizeBtn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
