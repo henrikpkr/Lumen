@@ -11,12 +11,25 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.lumen_web.db import session_scope
+from backend.lumen_web.documentation import (
+    add_documentation_session_text,
+    create_documentation_session,
+    documentation_session_detail,
+    generate_documentation_note,
+    list_documentation_patient_sessions,
+    list_documentation_patients,
+    list_documentation_sessions,
+    save_reviewed_documentation_note,
+    transcribe_documentation_session_audio,
+    transcription_configuration_status,
+    update_documentation_session_text,
+)
 from backend.lumen_web.model_health import check_configured_models
 from backend.lumen_web.repositories import (
     apply_review_action,
@@ -235,6 +248,30 @@ class EmailReferralRequest(BaseModel):
     body: str
 
 
+class DocumentationSessionRequest(BaseModel):
+    tenant_id: str | None = DEMO_TENANT_ID
+    title: str = "Documentation session"
+    referral_id: str | None = None
+    patient_id: str | None = None
+    patient_label: str | None = None
+    therapist_id: str | None = None
+    therapist_label: str | None = None
+
+
+class DocumentationTextRequest(BaseModel):
+    extracted_text: str
+    source_metadata: dict[str, Any] | None = None
+
+
+class DocumentationGenerateRequest(BaseModel):
+    source_text_id: str | None = None
+
+
+class DocumentationReviewRequest(BaseModel):
+    reviewed_json: dict[str, Any]
+    reviewer_id: str | None = None
+
+
 @app.get("/", include_in_schema=False)
 def index() -> FileResponse:
     return FileResponse(FRONTEND_DIR / "index.html")
@@ -247,6 +284,8 @@ def index() -> FileResponse:
 @app.get("/therapists", include_in_schema=False)
 @app.get("/intake", include_in_schema=False)
 @app.get("/clinical", include_in_schema=False)
+@app.get("/documentation", include_in_schema=False)
+@app.get("/my-patients", include_in_schema=False)
 @app.get("/integrations", include_in_schema=False)
 @app.get("/system", include_in_schema=False)
 def app_page() -> FileResponse:
@@ -777,6 +816,180 @@ def retrieval_search(
                 limit=limit,
             )
         }
+
+
+@app.get("/api/documentation/sessions")
+def documentation_sessions(tenant_id: str | None = DEMO_TENANT_ID) -> dict[str, Any]:
+    with session_scope() as session:
+        return {
+            "generator_mode": os.getenv("NOTE_GENERATOR", "fake").strip().lower() or "fake",
+            "transcript_speaker_labeling_enabled": os.getenv("ENABLE_TRANSCRIPT_SPEAKER_LABELING", "false").strip().lower()
+            in {"1", "true", "yes", "on"},
+            "sessions": list_documentation_sessions(session, tenant_id=tenant_id),
+        }
+
+
+@app.get("/api/documentation/patients")
+def documentation_patients(tenant_id: str | None = DEMO_TENANT_ID) -> dict[str, Any]:
+    with session_scope() as session:
+        return {"patients": list_documentation_patients(session, tenant_id=tenant_id)}
+
+
+@app.get("/api/documentation/patient-sessions")
+def documentation_patient_sessions(patient_label: str, tenant_id: str | None = DEMO_TENANT_ID) -> dict[str, Any]:
+    try:
+        with session_scope() as session:
+            return {
+                "patient_label": patient_label,
+                "sessions": list_documentation_patient_sessions(
+                    session,
+                    patient_label=patient_label,
+                    tenant_id=tenant_id,
+                ),
+            }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/documentation/transcription-config")
+def documentation_transcription_config() -> dict[str, Any]:
+    return transcription_configuration_status()
+
+
+@app.post("/api/documentation/sessions", status_code=201)
+def documentation_session_create(body: DocumentationSessionRequest) -> dict[str, Any]:
+    try:
+        with session_scope() as session:
+            return {
+                "session": create_documentation_session(
+                    session,
+                    tenant_id=body.tenant_id,
+                    title=body.title,
+                    referral_id=body.referral_id,
+                    patient_id=body.patient_id,
+                    patient_label=body.patient_label,
+                    therapist_id=body.therapist_id,
+                    therapist_label=body.therapist_label,
+                )
+            }
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/documentation/sessions/{documentation_session_id}")
+def documentation_session_get(documentation_session_id: str) -> dict[str, Any]:
+    try:
+        with session_scope() as session:
+            detail = documentation_session_detail(session, documentation_session_id)
+            detail["generator_mode"] = os.getenv("NOTE_GENERATOR", "fake").strip().lower() or "fake"
+            detail["transcript_speaker_labeling_enabled"] = os.getenv(
+                "ENABLE_TRANSCRIPT_SPEAKER_LABELING", "false"
+            ).strip().lower() in {"1", "true", "yes", "on"}
+            return detail
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/api/documentation/sessions/{documentation_session_id}/texts", status_code=201)
+def documentation_session_text_create(
+    documentation_session_id: str,
+    body: DocumentationTextRequest,
+) -> dict[str, Any]:
+    try:
+        with session_scope() as session:
+            return {
+                "text": add_documentation_session_text(
+                    session,
+                    documentation_session_id=documentation_session_id,
+                    extracted_text=body.extracted_text,
+                )
+            }
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.put("/api/documentation/sessions/{documentation_session_id}/texts/{text_id}")
+def documentation_session_text_update(
+    documentation_session_id: str,
+    text_id: str,
+    body: DocumentationTextRequest,
+) -> dict[str, Any]:
+    try:
+        with session_scope() as session:
+            return {
+                "text": update_documentation_session_text(
+                    session,
+                    documentation_session_id=documentation_session_id,
+                    text_id=text_id,
+                    extracted_text=body.extracted_text,
+                    source_metadata=body.source_metadata,
+                )
+            }
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/documentation/sessions/{documentation_session_id}/texts/transcribe-audio", status_code=201)
+async def documentation_session_audio_transcribe(
+    documentation_session_id: str,
+    audio: UploadFile = File(...),
+    enable_speaker_labeling: bool | None = Form(default=None),
+) -> dict[str, Any]:
+    try:
+        audio_bytes = await audio.read()
+        with session_scope() as session:
+            text = transcribe_documentation_session_audio(
+                session,
+                documentation_session_id=documentation_session_id,
+                audio_bytes=audio_bytes,
+                filename=audio.filename or "session-audio",
+                enable_speaker_labeling=enable_speaker_labeling,
+            )
+            return {
+                "text": text,
+                "warning": (text.get("source_metadata") or {}).get("speaker_labeling_warning"),
+            }
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Audio transcription failed: {exc}") from exc
+
+
+@app.post("/api/documentation/sessions/{documentation_session_id}/notes/generate", status_code=201)
+def documentation_note_generate(
+    documentation_session_id: str,
+    body: DocumentationGenerateRequest,
+) -> dict[str, Any]:
+    try:
+        with session_scope() as session:
+            return {
+                "note": generate_documentation_note(
+                    session,
+                    documentation_session_id=documentation_session_id,
+                    source_text_id=body.source_text_id,
+                )
+            }
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.put("/api/documentation/notes/{note_id}/reviewed")
+def documentation_note_reviewed(note_id: str, body: DocumentationReviewRequest, request: Request) -> dict[str, Any]:
+    try:
+        reviewer_id = body.reviewer_id or current_user_id(request, fallback=DEMO_THERAPIST_USER_ID)
+        with session_scope() as session:
+            return {
+                "note": save_reviewed_documentation_note(
+                    session,
+                    note_id=note_id,
+                    reviewed_json=body.reviewed_json,
+                    reviewer_id=reviewer_id,
+                )
+            }
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/referrals/{referral_id}/reports/draft", status_code=201)

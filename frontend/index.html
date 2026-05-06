@@ -18,14 +18,35 @@
         </a>
 
         <nav class="side-nav">
-          <a href="/" data-nav data-page-link="overview">Overview</a>
-          <a href="/referrals" data-nav data-page-link="referrals">Referrals</a>
-          <a href="/review" data-nav data-page-link="review">Review inbox</a>
-          <a href="/therapists" data-nav data-page-link="therapists">Therapists</a>
-          <a href="/intake" data-nav data-page-link="intake">Intake &amp; scheduling</a>
-          <a href="/integrations" data-nav data-page-link="integrations">Integrations</a>
-          <a href="/system" data-nav data-page-link="system">System (dev)</a>
+          <section class="nav-group" aria-labelledby="therapist-workspace-nav">
+            <p id="therapist-workspace-nav" class="nav-group-label">Therapist Workspace</p>
+            <a href="/documentation" data-nav data-page-link="documentation">
+              <span>Documentation</span>
+              <small>Session note workspace</small>
+            </a>
+            <a href="/my-patients" data-nav data-page-link="my-patients">
+              <span>My Patients</span>
+              <small>Patient sessions</small>
+            </a>
+          </section>
+
+          <section class="nav-group" aria-labelledby="admin-workspace-nav">
+            <p id="admin-workspace-nav" class="nav-group-label">Admin Workspace</p>
+            <a href="/" data-nav data-page-link="overview">Overview</a>
+            <a href="/referrals" data-nav data-page-link="referrals">Referrals</a>
+            <a href="/therapists" data-nav data-page-link="therapists">Therapists</a>
+            <a href="/workflows" data-nav data-page-link="workflows">Workflows</a>
+            <a href="/review" data-nav data-page-link="review">Review inbox</a>
+            <a href="/intake" data-nav data-page-link="intake">Intake &amp; scheduling</a>
+            <a href="/clinical" data-nav data-page-link="clinical">Clinical</a>
+            <a href="/integrations" data-nav data-page-link="integrations">Integrations</a>
+            <a href="/system" data-nav data-page-link="system">System (dev)</a>
+          </section>
         </nav>
+
+        <p class="role-boundary-note">
+          Role separation is currently a UI organization only. Authentication and permissions will be added later.
+        </p>
 
         <div class="sidebar-footer">
           <div class="status-strip" id="status-strip" data-status="idle">
@@ -467,6 +488,303 @@
                   <button type="submit">Add source</button>
                 </form>
                 <div id="clinical-library-list" class="record-list"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="page documentation-page" data-page="documentation" aria-labelledby="documentation-page-title">
+            <header class="documentation-hero">
+              <div>
+                <p class="eyebrow">Therapist Workspace</p>
+                <h2 id="documentation-page-title">Session Documentation</h2>
+                <p>Choose a therapist, patient, and session, then create a reviewed note from transcript text.</p>
+              </div>
+              <div class="documentation-status-strip" aria-label="Documentation status">
+                <span id="documentation-transcript-status" class="status-chip">No transcript yet</span>
+                <span id="documentation-note-status" class="status-chip">No draft</span>
+                <span id="documentation-generator-status" class="status-chip">Generator mode: Fake</span>
+              </div>
+            </header>
+
+            <div id="documentation-message" class="form-message documentation-message" role="status" aria-live="polite" hidden></div>
+
+            <div class="documentation-flow">
+              <section class="panel documentation-step" aria-labelledby="documentation-therapist-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Therapist</p>
+                    <h2 id="documentation-therapist-title">1. Choose or add therapist</h2>
+                    <p class="section-helper">Start with the therapist whose session notes you are documenting.</p>
+                  </div>
+                  <button id="documentation-refresh-button" type="button" class="secondary compact">Refresh sessions</button>
+                </div>
+                <form id="documentation-therapist-form" class="documentation-selector-form">
+                  <label>
+                    Therapist name
+                    <input id="documentation-therapist-label-input" name="therapist_label" type="text" placeholder="Therapist name" required />
+                  </label>
+                  <button type="submit">Use therapist</button>
+                </form>
+                <div id="documentation-current-therapist" class="selected-session-card">
+                  <p class="eyebrow">Current therapist</p>
+                  <h3>No therapist selected</h3>
+                </div>
+                <div id="documentation-therapist-list" class="record-list"></div>
+              </section>
+
+              <section class="panel documentation-step" aria-labelledby="documentation-patient-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">My Patients</p>
+                    <h2 id="documentation-patient-title">2. Choose or add patient</h2>
+                    <p class="section-helper">Patients are shown for the selected therapist based on existing session notes.</p>
+                  </div>
+                </div>
+                <form id="documentation-patient-form" class="documentation-selector-form">
+                  <label>
+                    Patient name
+                    <input id="documentation-patient-label-input" name="patient_label" type="text" placeholder="Patient name" required />
+                  </label>
+                  <button type="submit">Use patient</button>
+                </form>
+                <div id="documentation-current-patient" class="selected-session-card">
+                  <p class="eyebrow">Current patient</p>
+                  <h3>No patient selected</h3>
+                </div>
+                <div id="documentation-patient-list" class="record-list"></div>
+              </section>
+
+              <section class="panel documentation-step" aria-labelledby="documentation-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Patient Sessions</p>
+                    <h2 id="documentation-title">3. Select or create patient session</h2>
+                    <p class="section-helper">Choose the session you are documenting for the selected patient.</p>
+                  </div>
+                </div>
+                <form id="documentation-session-form" class="documentation-session-form">
+                  <label>
+                    Session note/title optional
+                    <input name="title" type="text" placeholder="Optional note title" />
+                  </label>
+                  <input id="documentation-session-patient-label" name="patient_label" type="hidden" />
+                  <input id="documentation-session-therapist-label" name="therapist_label" type="hidden" />
+                  <button type="submit">Create session</button>
+                </form>
+                <div id="documentation-selected-session-card" class="selected-session-card">
+                  <p class="eyebrow">Current session</p>
+                  <h3>No session selected</h3>
+                  <p>Select or create a session note to begin.</p>
+                </div>
+                <div id="documentation-session-list" class="record-list"></div>
+              </section>
+
+              <section class="panel documentation-step" aria-labelledby="documentation-text-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Session Documentation</p>
+                    <h2 id="documentation-text-title">4. Add or review transcript</h2>
+                    <p class="section-helper">Upload short audio for transcription, or paste transcript text directly. Raw audio/image files are not stored.</p>
+                  </div>
+                  <span id="documentation-selected-session" class="panel-stat">No session</span>
+                </div>
+                <form id="documentation-audio-form" class="documentation-audio-form">
+                  <label>
+                    Audio file for transcription
+                    <input id="documentation-audio-input" name="audio" type="file" accept="audio/*" />
+                  </label>
+                  <label class="checkbox-label">
+                    <input id="documentation-speaker-labeling-checkbox" name="enable_speaker_labeling" type="checkbox" />
+                    Try to label therapist and patient speakers after transcription
+                  </label>
+                  <p class="section-helper">Speaker labels are AI-assisted and may be wrong. Review/edit transcript before generating the note.</p>
+                  <p id="documentation-audio-status" class="audio-status" role="status" aria-live="polite" hidden></p>
+                  <div class="actions tight">
+                    <button id="documentation-transcribe-audio-button" type="button">Transcribe audio</button>
+                  </div>
+                </form>
+                <form id="documentation-text-form">
+                  <label>
+                    Full transcript or extracted session text
+                    <textarea
+                      name="extracted_text"
+                      rows="9"
+                      placeholder="Paste the full transcript or extracted session text here. This can be a dialogue transcript. Raw audio/image files are not stored."
+                      required
+                    ></textarea>
+                  </label>
+                  <div class="actions tight">
+                    <button type="submit">Store transcript text</button>
+                  </div>
+                </form>
+                <div id="documentation-text-list" class="record-list"></div>
+              </section>
+
+              <section class="panel documentation-step" aria-labelledby="documentation-generate-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">AI draft</p>
+                    <h2 id="documentation-generate-title">5. Generate draft session note</h2>
+                    <p id="documentation-generator-warning" class="section-helper warning" hidden>
+                      Fake generator mode: output is only for workflow testing, not clinical quality.
+                    </p>
+                    <p id="documentation-generator-provider" class="section-helper">
+                      AI provider: Fake generator
+                    </p>
+                  </div>
+                </div>
+                <div class="documentation-callout">
+                  <p>This draft assistant uses the stored transcript as its source. It is not an autonomous clinical decision-maker.</p>
+                  <p>Do not infer diagnoses unless they are explicitly stated. If risk/safety was not discussed, keep it marked as not_assessed.</p>
+                </div>
+                <div class="actions tight documentation-generate-actions">
+                  <button id="documentation-generate-button" type="button">Generate draft note</button>
+                </div>
+              </section>
+
+              <section class="panel documentation-step documentation-note-panel" aria-labelledby="documentation-note-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Therapist review</p>
+                    <h2 id="documentation-note-title">6. Review and edit note</h2>
+                    <p class="section-helper">Review every section before saving. AI drafts must be reviewed by the therapist before use.</p>
+                  </div>
+                </div>
+                <form id="documentation-note-form" class="clinical-note-form">
+                  <label>
+                    Summary
+                    <textarea id="documentation-note-summary" name="summary" rows="4"></textarea>
+                  </label>
+                  <label>
+                    Presenting topics
+                    <span class="field-helper">One item per line.</span>
+                    <textarea id="documentation-note-presenting-topics" name="presenting_topics" rows="4"></textarea>
+                  </label>
+                  <label>
+                    Subjective
+                    <span class="field-helper">Patient-reported content. One item per line.</span>
+                    <textarea id="documentation-note-subjective" name="subjective" rows="5"></textarea>
+                  </label>
+                  <label>
+                    Objective / session observations
+                    <span class="field-helper">Only observable in-session behavior or therapeutic process. Patient-reported sleep, symptoms, mood, thoughts, and experiences belong in Subjective unless directly observed.</span>
+                    <textarea id="documentation-note-objective-observations" name="objective_observations" rows="5"></textarea>
+                  </label>
+                  <label>
+                    Interventions
+                    <span class="field-helper">Therapist interventions used. One item per line.</span>
+                    <textarea id="documentation-note-interventions" name="interventions" rows="5"></textarea>
+                  </label>
+                  <label>
+                    Patient response
+                    <span class="field-helper">Patient response to interventions or discussion. One item per line.</span>
+                    <textarea id="documentation-note-patient-response" name="patient_response" rows="5"></textarea>
+                  </label>
+                  <label>
+                    Risk / safety status
+                    <span class="field-helper">Use not_assessed if risk/safety was not discussed.</span>
+                    <select id="documentation-note-risk-status" name="risk_status">
+                      <option value="not_assessed">not_assessed</option>
+                      <option value="assessed">assessed</option>
+                      <option value="mentioned">mentioned</option>
+                      <option value="concern_noted">concern_noted</option>
+                    </select>
+                  </label>
+                  <label>
+                    Risk / safety details
+                    <span class="field-helper">Preserve exact risk language when present, including not wanting to be alive, self-harm, suicide, or harm-to-others wording.</span>
+                    <textarea id="documentation-note-risk-details" name="risk_details" rows="4"></textarea>
+                  </label>
+                  <label>
+                    Plan
+                    <span class="field-helper">Next steps, homework, follow-up, or care plan. One item per line.</span>
+                    <textarea id="documentation-note-plan" name="plan" rows="5"></textarea>
+                  </label>
+                  <label>
+                    Uncertainty flags
+                    <span class="field-helper">Anything missing, unclear, or requiring therapist review. One item per line.</span>
+                    <textarea id="documentation-note-uncertainty-flags" name="uncertainty_flags" rows="5"></textarea>
+                  </label>
+                  <details class="debug-json">
+                    <summary>Advanced: view raw JSON (developer/debug only)</summary>
+                    <textarea id="documentation-note-editor" name="reviewed_json" rows="14" spellcheck="false" readonly></textarea>
+                  </details>
+                  <p class="review-reminder">AI drafts must be reviewed by the therapist before use.</p>
+                  <div class="actions tight">
+                    <button type="submit">Save reviewed note</button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="panel documentation-step reviewed-note-panel" aria-labelledby="documentation-reviewed-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Saved note</p>
+                    <h2 id="documentation-reviewed-title">7. Reviewed note preview</h2>
+                    <p id="documentation-reviewed-meta" class="section-helper">No reviewed note saved yet.</p>
+                  </div>
+                </div>
+                <div class="actions tight">
+                  <button id="documentation-edit-reviewed-button" type="button" class="secondary" disabled>Edit reviewed note</button>
+                  <button id="documentation-copy-note-button" type="button" class="secondary" disabled>Copy note text</button>
+                </div>
+                <details id="documentation-reviewed-preview-details" class="reviewed-preview-details">
+                  <summary>View saved note preview</summary>
+                  <div id="documentation-reviewed-preview" class="reviewed-note-preview" hidden></div>
+                </details>
+                <div id="documentation-note-list" class="record-list"></div>
+              </section>
+            </div>
+            <dialog id="documentation-transcript-dialog" class="documentation-dialog">
+              <form id="documentation-transcript-form" method="dialog">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Stored text</p>
+                    <h2>Edit transcript</h2>
+                    <p class="section-helper">This is the stored extracted text. Raw audio/image files are not stored.</p>
+                  </div>
+                  <button id="documentation-transcript-close" type="button" class="secondary compact">Close</button>
+                </div>
+                <label>
+                  Full transcript or extracted session text
+                  <textarea id="documentation-transcript-editor" name="extracted_text" rows="22" required></textarea>
+                </label>
+                <div class="actions tight">
+                  <button id="documentation-transcript-save" type="submit">Save transcript text</button>
+                </div>
+              </form>
+            </dialog>
+          </section>
+
+          <section class="page my-patients-page" data-page="my-patients" aria-labelledby="my-patients-title">
+            <header class="documentation-hero">
+              <div>
+                <p class="eyebrow">Therapist Workspace</p>
+                <h2 id="my-patients-title">My Patients</h2>
+                <p>Review patients with session documentation and open their chronological session history.</p>
+              </div>
+            </header>
+            <div id="my-patients-message" class="form-message documentation-message" role="status" aria-live="polite" hidden></div>
+            <div class="workspace-grid my-patients-grid">
+              <section class="panel" aria-labelledby="my-patients-list-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Patients</p>
+                    <h2 id="my-patients-list-title">Patients with sessions</h2>
+                  </div>
+                </div>
+                <div id="my-patients-list" class="record-list"></div>
+              </section>
+              <section class="panel" aria-labelledby="my-patient-sessions-title">
+                <div class="panel-header">
+                  <div>
+                    <p class="eyebrow">Patient Sessions</p>
+                    <h2 id="my-patient-sessions-title">Select a patient</h2>
+                    <p id="my-patient-sessions-helper" class="section-helper">Click a patient to see sessions newest first.</p>
+                  </div>
+                  <button id="my-patients-back-button" type="button" class="secondary compact" hidden>Back to all patients</button>
+                </div>
+                <div id="my-patient-sessions-list" class="record-list"></div>
               </section>
             </div>
           </section>

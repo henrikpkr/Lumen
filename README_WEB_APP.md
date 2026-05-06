@@ -67,6 +67,7 @@ The UI includes:
 - Deterministic therapist matching and appointment slot proposal from referral detail.
 - Intake checklist, consent records, governed intake document uploads, generic questionnaire response capture, reminder drafts, and therapist prep brief drafts.
 - Clinical foundation page for patient workspace, session notes, clinical library sources, score records, and retrieval chunks.
+- Documentation MVP page for extracted-text-only Session Note v0.1 JSON generation, therapist/admin review, save, and reload.
 - Report draft editing with claim-to-evidence validation, unsupported-claim blocking, therapist sign-off, and Markdown export.
 - Referral CSV batch imports with source artifact storage, imported referral records, and row-level import errors.
 - Integration health, security posture, and feedback metrics panels.
@@ -103,6 +104,13 @@ The script checks configured model availability, submits the standard referral s
 ## API Highlights
 
 ```http
+GET /api/documentation/sessions
+POST /api/documentation/sessions
+GET /api/documentation/sessions/{documentation_session_id}
+POST /api/documentation/sessions/{documentation_session_id}/texts
+PUT /api/documentation/sessions/{documentation_session_id}/texts/{text_id}
+POST /api/documentation/sessions/{documentation_session_id}/notes/generate
+PUT /api/documentation/notes/{note_id}/reviewed
 GET /api/health/models
 GET /api/examples
 GET /api/referrals
@@ -177,6 +185,31 @@ GET /api/events/{job_id}
 ```
 
 Human approvals are stored in `human_review_tasks`; approving resumable gates such as `match_approval`, `send_approval`, and `therapist_signoff` starts a follow-on workflow run with the approved gate recorded in the request.
+
+## Documentation MVP
+
+The documentation MVP is additive and separate from the workflow scheduler. It stores only full transcript or extracted session text, then generates a structured `session_note_v0.1` JSON draft through either a deterministic fake generator or Hugging Face Router. Raw audio/image files are not stored.
+
+```powershell
+$env:NOTE_GENERATOR="fake"
+```
+
+For Hugging Face generation:
+
+```powershell
+$env:NOTE_GENERATOR="huggingface"
+$env:HF_TOKEN="your_huggingface_token_here"
+$env:HF_BASE_URL="https://router.huggingface.co/v1"
+$env:HF_LLM_MODEL="meta-llama/Llama-3.1-70B-Instruct"
+```
+
+Documented fallback model options:
+
+- `meta-llama/Llama-3.1-8B-Instruct` for cheaper/dev testing.
+- `Qwen/Qwen2.5-72B-Instruct` for strong structured JSON behavior.
+- `mistralai/Mixtral-8x7B-Instruct-v0.1`, or a current Mistral instruct model available through Hugging Face providers.
+
+Future audio/image support should follow this path: temporary upload, transcription/OCR, store extracted text, delete the raw file, chunk/evidence extraction if needed, then final session note synthesis. The current MVP does not implement audio upload and does not permanently store raw audio or image sources.
 
 ## Phase 4 and 5 Workflow
 
