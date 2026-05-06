@@ -82,6 +82,10 @@ Wait for: `INFO: Uvicorn running on http://127.0.0.1:8003`
 
 **Note:** First run will download the "base" whisper model (~140MB) - this may take a few minutes.
 
+**Performance:** On Apple M2 8GB with tinyllama:1.1b + GPU:
+- Transcription: ~11 seconds for 2-minute session
+- SOAP note generation: 30-60 seconds
+
 ### Step 3: Open the Recorder in Browser
 Open this URL in Chrome/Safari/Firefox:
 ```
@@ -152,6 +156,18 @@ uvicorn.run(app, host="127.0.0.1", port=8003)  # Change 8003 to desired port
 - **Future Integration:** Will connect to `SessionNote` model in main app
 - **Local Only:** No data sent to external APIs - all processing on your machine
 - **GPU Recommended:** Apple M1/M2/M3 Macs work best with `OLLAMA_NUM_GPU=99`
+
+## Testing with Sample Session
+
+Generate a sample psychotherapy session MP3 for testing:
+
+```bash
+python3 generate_sample_session.py
+```
+
+This creates `sample_psychotherapy_session.mp3` on your Desktop (~2 minutes of audio). Upload it to the recorder to test the full flow.
+
+**What's in the sample:** A realistic therapy session discussing work stress, anxiety, sleep issues, and coping strategies.
 
 ## Support
 For issues, check:
