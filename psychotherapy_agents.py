@@ -14,7 +14,7 @@ class PsychotherapyState(TypedDict):
     revision_count: int
 
 # Use the medium model defined in environment, default to a sensible local model
-model_name = os.getenv("LUMEN_MEDIUM_MODEL", "tinyllama:1.1b")
+model_name = os.getenv("LUMEN_MEDIUM_MODEL", "qwen3:8b")
 ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 llm = ChatOllama(model=model_name, base_url=ollama_base_url)

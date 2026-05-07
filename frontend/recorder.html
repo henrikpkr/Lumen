@@ -163,6 +163,7 @@
         <div class="status-container">
             <span id="statusIndicator" class="status-indicator"></span>
             <span id="statusText" style="font-weight: 600; color: #111827;">Ready to record</span>
+            <span id="durationDisplay" style="margin-left: auto; font-weight: 600; color: #6b7280;">00:00</span>
         </div>
 
         <div class="controls">
@@ -209,6 +210,11 @@
     <script>
         let mediaRecorder;
         let audioChunks = [];
+        let recordingStartTime = null;
+        let durationTimer = null;
+        let isRecording = false;
+
+        const FETCH_TIMEOUT_MS = 120000;
 
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -217,12 +223,13 @@
         const summarizeBtn = document.getElementById('summarizeBtn');
         const uploadBtn = document.getElementById('uploadBtn');
         const fileInput = document.getElementById('fileInput');
-        
+
         const transcriptBox = document.getElementById('transcriptBox');
         const noteBox = document.getElementById('noteBox');
-        
+
         const statusIndicator = document.getElementById('statusIndicator');
         const statusText = document.getElementById('statusText');
+        const durationDisplay = document.getElementById('durationDisplay');
         const transcribeLoader = document.getElementById('transcribeLoader');
         const summarizeLoader = document.getElementById('summarizeLoader');
         const uploadLoader = document.getElementById('uploadLoader');
@@ -230,8 +237,71 @@
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
 
-        // The local FastAPI endpoint
         const API_BASE = 'http://127.0.0.1:8003';
+
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startDurationTimer() {
+            recordingStartTime = Date.now();
+            isRecording = true;
+            durationTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                durationDisplay.textContent = formatDuration(elapsed);
+            }, 1000);
+        }
+
+        function stopDurationTimer() {
+            if (durationTimer) {
+                clearInterval(durationTimer);
+                durationTimer = null;
+            }
+            isRecording = false;
+            recordingStartTime = null;
+        }
+
+        function resetDurationDisplay() {
+            durationDisplay.textContent = '00:00';
+        }
+
+        async function fetchWithTimeout(url, options, timeoutMs = FETCH_TIMEOUT_MS) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                return response;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timed out. Please try again.');
+                }
+                throw error;
+            }
+        }
+
+        function validateTranscript(transcript) {
+            if (!transcript || transcript.trim().length === 0) {
+                return { valid: false, error: 'Transcript is empty. Please record or upload audio first.' };
+            }
+            if (transcript === '(Empty transcript)') {
+                return { valid: false, error: 'Transcript is empty. Please try again with a different recording.' };
+            }
+            if (transcript.trim().length < 20) {
+                return { valid: false, error: 'Transcript is too short to generate a meaningful clinical note.' };
+            }
+            if (!/[a-zA-Z]{3,}/.test(transcript)) {
+                return { valid: false, error: 'Transcript does not appear to contain valid text.' };
+            }
+            return { valid: true };
+        }
 
         async function setupAudio() {
             try {
@@ -239,11 +309,15 @@
                 mediaRecorder = new MediaRecorder(stream);
 
                 mediaRecorder.ondataavailable = event => {
-                    if (event.data.size > 0) audioChunks.push(event.data);
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        if (audioChunks.length > 100) {
+                            audioChunks = audioChunks.slice(-50);
+                        }
+                    }
                 };
 
                 mediaRecorder.onstop = async () => {
-                    // Create audio blob and send to backend
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     audioChunks = [];
                     await uploadAndTranscribe(audioBlob);
@@ -266,13 +340,15 @@
 
         startBtn.onclick = async () => {
             if (!mediaRecorder) await setupAudio();
-            audioChunks = []; // reset
-            mediaRecorder.start(1000); // chunk every 1s
-            
+            audioChunks = [];
+            resetDurationDisplay();
+            mediaRecorder.start(1000);
+            startDurationTimer();
+
             startBtn.disabled = true;
             pauseBtn.disabled = false;
             stopBtn.disabled = false;
-            
+
             statusIndicator.className = 'status-indicator status-recording';
             statusText.textContent = 'Recording Session...';
         };
@@ -291,19 +367,22 @@
 
         stopBtn.onclick = () => {
             mediaRecorder.stop();
-            
-            // Release the microphone
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            mediaRecorder = null; // force re-setup next time
-            
+            stopDurationTimer();
+
+            if (mediaRecorder && mediaRecorder.stream) {
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            mediaRecorder = null;
+
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             resumeBtn.style.display = 'none';
             pauseBtn.style.display = 'inline-flex';
             stopBtn.disabled = true;
-            
+
             statusIndicator.className = 'status-indicator';
             statusText.textContent = 'Processing Audio...';
+            resetDurationDisplay();
         };
 
         async function uploadAndTranscribe(blob) {
@@ -313,32 +392,41 @@
             progressBar.textContent = '10%';
             progressText.style.display = 'block';
             transcriptBox.value = '';
-            
+            summarizeBtn.disabled = true;
+
             const formData = new FormData();
             formData.append('audio', blob, 'session.webm');
 
             try {
                 progressBar.style.width = '30%';
                 progressBar.textContent = '30%';
-                
-                const response = await fetch(`${API_BASE}/api/transcribe`, {
+
+                const response = await fetchWithTimeout(`${API_BASE}/api/transcribe`, {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 progressBar.style.width = '70%';
                 progressBar.textContent = '70%';
-                
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText}`);
+                }
+
                 const data = await response.json();
-                
+
                 progressBar.style.width = '90%';
                 progressBar.textContent = '90%';
-                
+
                 if (data.error) {
                     transcriptBox.value = 'Error: ' + data.error;
                     progressText.textContent = 'Error during transcription';
+                } else if (!data.transcript || data.transcript.trim().length < 3) {
+                    transcriptBox.value = '(Empty transcript)';
+                    progressText.textContent = 'Warning: Empty or very short transcript';
                 } else {
-                    transcriptBox.value = data.transcript || '(Empty transcript)';
+                    transcriptBox.value = data.transcript;
                     summarizeBtn.disabled = false;
                     progressText.textContent = 'Transcription complete!';
                     progressBar.style.width = '100%';
@@ -346,12 +434,11 @@
                 }
                 statusText.textContent = 'Transcription Complete';
             } catch (error) {
-                transcriptBox.value = 'Failed to connect to local transcription server. Make sure transcribe_server.py is running on port 8003.';
+                transcriptBox.value = 'Failed to connect to local transcription server. Make sure transcribe_server.py is running on port 8003.\n\nError: ' + error.message;
                 statusText.textContent = 'Error';
                 progressText.textContent = 'Error: ' + error.message;
             } finally {
                 transcribeLoader.style.display = 'none';
-                // Keep progress bar visible for a moment
                 setTimeout(() => {
                     progressContainer.style.display = 'none';
                     progressText.style.display = 'none';
@@ -361,14 +448,20 @@
             }
         }
 
-        // Handle MP3 file upload
         uploadBtn.onclick = () => {
-            fileInput.click(); // Trigger file selection dialog
+            fileInput.click();
         };
 
         fileInput.onchange = async () => {
             const file = fileInput.files[0];
             if (!file) return;
+
+            const MAX_FILE_SIZE_MB = 50;
+            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                alert(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
+                fileInput.value = '';
+                return;
+            }
 
             uploadBtn.disabled = true;
             progressContainer.style.display = 'block';
@@ -376,7 +469,8 @@
             progressBar.textContent = '10%';
             progressText.style.display = 'block';
             transcriptBox.value = 'Uploading and transcribing...';
-            
+            summarizeBtn.disabled = true;
+
             const formData = new FormData();
             formData.append('audio', file, file.name);
 
@@ -384,26 +478,34 @@
                 progressBar.style.width = '30%';
                 progressBar.textContent = '30%';
                 progressText.textContent = 'Uploading file...';
-                
-                const response = await fetch(`${API_BASE}/api/transcribe`, {
+
+                const response = await fetchWithTimeout(`${API_BASE}/api/transcribe`, {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 progressBar.style.width = '70%';
                 progressBar.textContent = '70%';
                 progressText.textContent = 'Transcribing audio...';
-                
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText}`);
+                }
+
                 const data = await response.json();
-                
+
                 progressBar.style.width = '90%';
                 progressBar.textContent = '90%';
-                
+
                 if (data.error) {
                     transcriptBox.value = 'Error: ' + data.error;
                     progressText.textContent = 'Error during transcription';
+                } else if (!data.transcript || data.transcript.trim().length < 3) {
+                    transcriptBox.value = '(Empty transcript)';
+                    progressText.textContent = 'Warning: Empty or very short transcript';
                 } else {
-                    transcriptBox.value = data.transcript || '(Empty transcript)';
+                    transcriptBox.value = data.transcript;
                     summarizeBtn.disabled = false;
                     progressText.textContent = 'Transcription complete!';
                     progressBar.style.width = '100%';
@@ -411,13 +513,12 @@
                 }
                 statusText.textContent = 'MP3 Transcription Complete';
             } catch (error) {
-                transcriptBox.value = 'Failed to connect to local transcription server. Make sure transcribe_server.py is running on port 8003.';
+                transcriptBox.value = 'Failed to connect to local transcription server. Make sure transcribe_server.py is running on port 8003.\n\nError: ' + error.message;
                 statusText.textContent = 'Error';
                 progressText.textContent = 'Error: ' + error.message;
             } finally {
                 uploadBtn.disabled = false;
-                fileInput.value = ''; // Reset file input
-                // Keep progress bar visible for a moment
+                fileInput.value = '';
                 setTimeout(() => {
                     progressContainer.style.display = 'none';
                     progressText.style.display = 'none';
@@ -429,28 +530,39 @@
 
         summarizeBtn.onclick = async () => {
             const transcript = transcriptBox.value;
-            if (!transcript) return;
-            
+            const validation = validateTranscript(transcript);
+            if (!validation.valid) {
+                noteBox.value = 'Error: ' + validation.error;
+                return;
+            }
+
             summarizeBtn.disabled = true;
             summarizeLoader.style.display = 'block';
             noteBox.value = '';
 
             try {
-                const response = await fetch(`${API_BASE}/api/summarize`, {
+                const response = await fetchWithTimeout(`${API_BASE}/api/summarize`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ transcript })
-                });
-                
+                }, FETCH_TIMEOUT_MS * 2);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText}`);
+                }
+
                 const data = await response.json();
-                
+
                 if (data.error) {
                     noteBox.value = 'Error: ' + data.error;
+                } else if (!data.final_note) {
+                    noteBox.value = '(Empty note generated)';
                 } else {
-                    noteBox.value = data.final_note || '(Empty note)';
+                    noteBox.value = data.final_note;
                 }
             } catch (error) {
-                noteBox.value = 'Failed to connect to local summarization server. Make sure transcribe_server.py is running and Ollama is available.';
+                noteBox.value = 'Failed to connect to local summarization server. Make sure transcribe_server.py is running and Ollama is available.\n\nError: ' + error.message;
             } finally {
                 summarizeLoader.style.display = 'none';
                 summarizeBtn.disabled = false;
