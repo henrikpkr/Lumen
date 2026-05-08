@@ -1,0 +1,1 @@
+"""Psychology suite application package."""

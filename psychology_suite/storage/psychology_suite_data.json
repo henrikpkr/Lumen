@@ -1,0 +1,82 @@
+{
+  "psychologists": [
+    {
+      "id": "2ddf0707-ee94-4def-b7c9-826f1b682518",
+      "name": "Clinic Psychologist",
+      "email": "clinician@clinic.local",
+      "password_hash": "0ecc1075a4180aadd7116d4963cc4b20$27d08dac32706d7cf722fd386a5bef4015256d565d6571f42293f4dad0fd1085",
+      "active": true,
+      "created_at": "2026-05-08T11:03:51.045471+00:00",
+      "updated_at": "2026-05-08T11:03:51.045614+00:00"
+    }
+  ],
+  "auth_sessions": [
+    {
+      "id": "1355f85b-9ae0-4115-a9a4-33afbb1f59dc",
+      "psychologist_id": "2ddf0707-ee94-4def-b7c9-826f1b682518",
+      "expires_at": "2026-05-15T11:04:07.635811+00:00",
+      "revoked": false,
+      "created_at": "2026-05-08T11:04:07.635989+00:00"
+    },
+    {
+      "id": "8ad14fde-c01e-4c35-acff-e63b9cafb01c",
+      "psychologist_id": "2ddf0707-ee94-4def-b7c9-826f1b682518",
+      "expires_at": "2026-05-15T12:09:53.770471+00:00",
+      "revoked": false,
+      "created_at": "2026-05-08T12:09:53.770629+00:00"
+    },
+    {
+      "id": "0cb75f20-8bcd-49f0-87de-e066ebe10356",
+      "psychologist_id": "2ddf0707-ee94-4def-b7c9-826f1b682518",
+      "expires_at": "2026-05-15T12:33:49.485352+00:00",
+      "revoked": false,
+      "created_at": "2026-05-08T12:33:49.485429+00:00"
+    }
+  ],
+  "patients": [
+    {
+      "id": "c9fc75df-d6cf-4bd4-9399-10d83db5fe1b",
+      "psychologist_id": "2ddf0707-ee94-4def-b7c9-826f1b682518",
+      "display_name": "Maximilian Schmidt",
+      "date_of_birth": "2002-01-02",
+      "contact_email": "aganer@ger.com",
+      "contact_phone": "",
+      "notes": "",
+      "active": true,
+      "created_at": "2026-05-08T11:38:40.077946+00:00",
+      "updated_at": "2026-05-08T12:48:42.464409+00:00"
+    },
+    {
+      "id": "cf27e4ee-aab2-4b6d-9bf2-9666307de698",
+      "psychologist_id": "2ddf0707-ee94-4def-b7c9-826f1b682518",
+      "display_name": "Mr Brown",
+      "date_of_birth": "2002-01-02",
+      "contact_email": "",
+      "contact_phone": "",
+      "notes": "",
+      "active": true,
+      "created_at": "2026-05-08T12:49:04.820525+00:00",
+      "updated_at": "2026-05-08T12:49:08.658234+00:00"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "944bacff-3940-4926-ad29-720a8b2d9694",
+      "psychologist_id": "2ddf0707-ee94-4def-b7c9-826f1b682518",
+      "patient_id": "c9fc75df-d6cf-4bd4-9399-10d83db5fe1b",
+      "status": "final",
+      "note_format": "soap",
+      "transcript_text": "Hello, welcome back to our session.  How have you been feeling this week?  I've been feeling quite anxious, maybe a 7 out of 10 on the anxiety scale.  Work has been really stressful lately, and I'm having trouble sleeping, maybe 6 hours  a night, I'm sorry to hear that, can you tell me more about what's causing the work  stress?  Well, there's this big project due next month, and I keep worrying about meeting the  deadline.  I find myself checking emails constantly, even late at night, that sounds exhausting,  how is this affecting your daily life?  I'm more irritable with my family, and I've been skipping my morning runs.  I just feel like I can't shut my brain off, even when I try to relax.  I'm thinking about work, have you tried any coping strategies we discussed last time?  I tried the breathing exercises, and they help a bit in the moment, but I haven't been  consistent with the thought records you suggested.  That's okay, progress takes time, let's work on making those techniques a daily habit,  what would be one small step you could take this week, maybe I could set specific times  to check emails, like only at 9 a.m. and 2 p.m. and I could try to do the thought record  for at least three days this week.  Those are excellent goals, let's also work on a bedtime routine to improve your sleep.  Remember, small changes add up, we'll check in on this next session.  Thank you, I'll try my best, great work today, same time next week, yes, that works for  me, goodbye.",
+      "note_text": "Here is the revised SOAP note:\n\n**Subjective:**\n\nThe patient reports experiencing anxiety (7/10) due to work stress related to a project. They express irritability, which has impacted their daily life, particularly with family members and causing them to skip morning runs. The patient also mentions excessive checking of emails, especially late at night, and difficulty shutting off thoughts during relaxation.\n\n**Objective:**\n\n* Sleep disturbance: 6 hours/night\n* Excessive email checking (late at night)\n* Difficulty quieting thoughts during relaxation\n\n**Assessment:**\n\nThe patient's anxiety is impacting their daily life, affecting relationships with family members and causing them to miss morning runs. The excessive checking of emails and difficulty quieting thoughts are contributing factors.\n\n**Plan:**\n\n1. Establish specific times to check emails (e.g., 9 a.m. and 2 p.m.) to reduce excessive checking.\n2. Implement daily habit formation for thought records, aiming to use them consistently for at least three days this week.\n3. Improve bedtime routine to address sleep disturbance:\n\t* Encourage a calming pre-sleep activity (Not stated).\n\t* Establish a consistent sleep schedule.\n4. Monitor and adjust as needed.\n\nNote: Hallucinations were not observed during the session, and specific details about breathing exercises used in the moment are not available (not explicitly mentioned).",
+      "audio_path": "audio/944bacff-3940-4926-ad29-720a8b2d9694.mp3",
+      "audio_duration_seconds": null,
+      "transcript_confirmed": true,
+      "low_confidence": false,
+      "transcript_meta": "{\"avg_logprob\": null, \"no_speech_prob\": null, \"language\": \"en\", \"duration\": 87.767625}",
+      "started_at": "2026-05-08T11:38:54.873269+00:00",
+      "created_at": "2026-05-08T11:38:54.873282+00:00",
+      "updated_at": "2026-05-08T12:49:40.380994+00:00"
+    }
+  ],
+  "consents": []
+}

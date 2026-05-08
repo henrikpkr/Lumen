@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Psychology Suite | Sign In</title>
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <main class="auth-card">
+        <header>
+          <p class="eyebrow">Psychology suite</p>
+          <h1>Sign in</h1>
+          <p class="subtitle">Access your clinic workspace.</p>
+        </header>
+
+        <form id="login-form">
+          <label>
+            Email
+            <input type="email" name="email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" required />
+          </label>
+          <button type="submit">Sign in</button>
+        </form>
+        <p id="login-error" class="form-error" hidden></p>
+      </main>
+    </div>
+
+    <script src="static/app.js"></script>
+  </body>
+</html>

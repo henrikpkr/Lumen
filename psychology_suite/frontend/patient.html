@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Psychology Suite | Patients</title>
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span>Psychology Suite</span>
+          <small>Local clinic workspace</small>
+        </div>
+        <nav>
+          <a href="/profile">Profile</a>
+          <a href="/patient" class="is-active">Patients</a>
+          <a href="/session">Sessions</a>
+        </nav>
+        <button id="logout-btn" class="secondary">Sign out</button>
+      </aside>
+
+      <main class="content">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Patients</p>
+            <h1>Patient roster</h1>
+            <p class="subtitle">Create, edit, or archive patient records.</p>
+          </div>
+        </header>
+
+        <section class="panel">
+          <header>
+            <h2>New patient</h2>
+          </header>
+          <form id="patient-form" class="grid-form">
+            <label>
+              Name
+              <input name="display_name" required />
+            </label>
+            <label>
+              Date of birth
+              <input name="date_of_birth" placeholder="YYYY-MM-DD" />
+            </label>
+            <label>
+              Email
+              <input name="contact_email" type="email" />
+            </label>
+            <label>
+              Phone
+              <input name="contact_phone" />
+            </label>
+            <label class="full">
+              Notes
+              <textarea name="notes" rows="3"></textarea>
+            </label>
+            <button type="submit">Save patient</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <header>
+            <h2>Patient list</h2>
+          </header>
+          <div id="patient-list" class="list"></div>
+        </section>
+
+        <section class="panel" id="patient-detail-panel">
+          <header>
+            <h2>Patient detail</h2>
+            <p class="subtitle">Edit patient details or archive the record.</p>
+          </header>
+          <div id="patient-detail-empty" class="empty-state">Select a patient to view details.</div>
+          <div id="patient-detail-body" class="stack" hidden>
+            <form id="patient-detail-form" class="grid-form">
+              <label>
+                Patient ID
+                <input name="patient_id" readonly />
+              </label>
+              <label>
+                Status
+                <select name="active">
+                  <option value="true">Active</option>
+                  <option value="false">Archived</option>
+                </select>
+              </label>
+              <label>
+                Name
+                <input name="display_name" required />
+              </label>
+              <label>
+                Date of birth
+                <input name="date_of_birth" placeholder="YYYY-MM-DD" />
+              </label>
+              <label>
+                Email
+                <input name="contact_email" type="email" />
+              </label>
+              <label>
+                Phone
+                <input name="contact_phone" />
+              </label>
+              <label class="full">
+                Notes
+                <textarea name="notes" rows="3"></textarea>
+              </label>
+            </form>
+            <div class="actions">
+              <button id="patient-update-btn">Save changes</button>
+              <button id="patient-archive-btn" class="secondary">Archive patient</button>
+              <button id="patient-delete-btn" class="danger">Delete patient</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <header>
+            <h2>Sessions</h2>
+            <p class="subtitle">All sessions for the selected patient.</p>
+          </header>
+          <div id="patient-session-empty" class="empty-state">Select a patient to view sessions.</div>
+          <div id="patient-session-list" class="list"></div>
+        </section>
+
+        <section class="panel" id="patient-session-detail-panel">
+          <header>
+            <h2>Session detail</h2>
+            <p class="subtitle">Review transcript and SOAP note.</p>
+          </header>
+          <div id="patient-session-detail-empty" class="empty-state">Select a session to view details.</div>
+          <div id="patient-session-detail" class="stack" hidden>
+            <form id="patient-session-form" class="grid-form">
+              <label>
+                Session ID
+                <input name="session_id" readonly />
+              </label>
+              <label>
+                Status
+                <select name="status">
+                  <option value="draft">Draft</option>
+                  <option value="final">Final</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+              <label>
+                Started
+                <input name="started_at" readonly />
+              </label>
+              <label>
+                Note format
+                <select name="note_format">
+                  <option value="soap">SOAP</option>
+                </select>
+              </label>
+              <label>
+                Transcript confirmed
+                <input name="transcript_confirmed" readonly />
+              </label>
+              <label>
+                Low confidence
+                <input name="low_confidence" readonly />
+              </label>
+            </form>
+            <div class="actions">
+              <button id="patient-session-save-btn">Save session</button>
+              <button id="patient-session-archive-btn" class="secondary">Archive session</button>
+              <button id="patient-session-delete-btn" class="danger">Delete session</button>
+            </div>
+            <label class="full">
+              Transcript
+              <textarea id="patient-session-transcript" rows="6" readonly></textarea>
+            </label>
+            <label class="full">
+              SOAP note
+              <textarea id="patient-session-note" rows="6"></textarea>
+            </label>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="static/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Psychology Suite | Profile</title>
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span>Psychology Suite</span>
+          <small>Local clinic workspace</small>
+        </div>
+        <nav>
+          <a href="/profile" class="is-active">Profile</a>
+          <a href="/patient">Patients</a>
+          <a href="/session">Sessions</a>
+        </nav>
+        <button id="logout-btn" class="secondary">Sign out</button>
+      </aside>
+
+      <main class="content">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Profile</p>
+            <h1 id="profile-name">Loading...</h1>
+            <p id="profile-email" class="subtitle"></p>
+          </div>
+          <div class="actions">
+            <button id="refresh-btn" class="secondary">Refresh</button>
+          </div>
+        </header>
+
+        <section class="panel">
+          <header>
+            <h2>My patients</h2>
+            <p class="subtitle">Your current caseload.</p>
+          </header>
+          <div id="patient-list" class="list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="static/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Psychology Suite | Sessions</title>
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span>Psychology Suite</span>
+          <small>Local clinic workspace</small>
+        </div>
+        <nav>
+          <a href="/profile">Profile</a>
+          <a href="/patient">Patients</a>
+          <a href="/session" class="is-active">Sessions</a>
+        </nav>
+        <button id="logout-btn" class="secondary">Sign out</button>
+      </aside>
+
+      <main class="content">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Sessions</p>
+            <h1>Record and summarize</h1>
+            <p class="subtitle">Transcribe locally, review, and generate SOAP notes.</p>
+          </div>
+        </header>
+
+        <section class="panel">
+          <header>
+            <h2>New session</h2>
+          </header>
+          <form id="session-form" class="grid-form">
+            <label>
+              Patient ID
+              <input name="patient_id" required />
+            </label>
+            <label>
+              Note format
+              <select name="note_format">
+                <option value="soap" selected>SOAP</option>
+              </select>
+            </label>
+            <button type="submit">Create session</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <header>
+            <h2>Session list</h2>
+          </header>
+          <div id="session-list" class="list"></div>
+        </section>
+
+        <section class="panel">
+          <header>
+            <h2>Transcribe & summarize</h2>
+          </header>
+          <form id="transcribe-form" class="grid-form">
+            <label>
+              Session ID
+              <input name="session_id" required />
+            </label>
+            <label>
+              Audio file
+              <input type="file" name="audio" accept="audio/*" required />
+            </label>
+            <button type="submit">Transcribe</button>
+          </form>
+          <div id="transcript-panel" class="stack"></div>
+        </section>
+
+        <section class="panel">
+          <header>
+            <h2>SOAP note</h2>
+          </header>
+          <form id="summarize-form" class="grid-form">
+            <label>
+              Session ID
+              <input name="session_id" required />
+            </label>
+            <label>
+              Transcript confirmed
+              <select name="transcript_confirmed">
+                <option value="false" selected>No</option>
+                <option value="true">Yes</option>
+              </select>
+            </label>
+            <button type="submit">Generate SOAP note</button>
+          </form>
+          <label class="full">
+            Note
+            <textarea id="note-box" rows="8"></textarea>
+          </label>
+          <button id="save-note-btn">Save note</button>
+        </section>
+      </main>
+    </div>
+
+    <script src="static/app.js"></script>
+  </body>
+</html>
