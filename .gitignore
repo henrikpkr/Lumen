@@ -1,4 +1,22 @@
+<<<<<<< HEAD
 # Created by venv; see https://docs.python.org/3/library/venv.html
+<<<<<<<< HEAD:.gitignore
 *.log
 **/secret/
 /.venv/Scripts/run_lumen_local.ps1
+========
+*
+>>>>>>>> origin/henrik1:.venv/.gitignore
+=======
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+.venv/
+__pycache__/
+*.pyc
+>>>>>>> origin/henrik1
